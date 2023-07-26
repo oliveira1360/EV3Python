@@ -1,0 +1,179 @@
+#!/usr/bin/env pybricks-micropython
+from pybricks.hubs import EV3Brick
+from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor,
+                                 InfraredSensor, UltrasonicSensor, GyroSensor)
+from pybricks.parameters import Port, Stop, Direction, Button, Color
+from pybricks.tools import wait, StopWatch, DataLog
+from pybricks.robotics import DriveBase
+from pybricks.media.ev3dev import SoundFile, ImageFile
+
+
+# python mortorees qesqeudo a e direito b
+
+left_motor = Motor(Port.A)
+right_motor = Motor(Port.D)
+top_motor = Motor(Port.C)
+
+
+color_sensor_right = ColorSensor(Port.S1)
+color_sensor_left = ColorSensor(Port.S2)
+
+ultrasonic_sensor = UltrasonicSensor(Port.S4)
+
+reflected_light_intensity_right = color_sensor_right.reflection()
+reflected_light_intensity_left = color_sensor_left.reflection()
+
+robot = DriveBase(left_motor, right_motor, wheel_diameter=68.8, axle_track=120)
+
+power = 200
+error = 0
+last_error = 0
+integral = 0
+derivate = 0
+kp = 5 # set to 1
+ki = 0.0001  # 0.1
+kd = 4  # 200
+
+
+big_green = 7
+small_green = 4
+
+small_black = 7
+big_black = 8
+
+
+last_values_sensor = []
+
+while True:
+
+
+
+    distance = ultrasonic_sensor.distance()
+
+    last_values_sensor.append((reflected_light_intensity_left, reflected_light_intensity_right))
+
+    reflected_light_intensity_right = color_sensor_right.reflection()
+    reflected_light_intensity_left = color_sensor_left.reflection()
+
+    error = reflected_light_intensity_left - reflected_light_intensity_right
+    integral = integral + error
+    math_sum = integral + error
+    derivate = error - last_error
+    math_x_kp = kp * error
+    math_multiply_ki = integral * ki
+    math_multiply_kd = derivate * kd
+    last_sum_adv = math_x_kp + math_multiply_ki + math_multiply_kd
+    robot.drive(-100, last_sum_adv)
+    error = last_error
+
+
+    if reflected_light_intensity_left <= 7 and reflected_light_intensity_right <= 7:
+        color_l = color_sensor_left.color()
+        color_r = color_sensor_right.color()
+        robot.drive(0, 0)
+        wait(1000)
+        print(color_l)
+        print(color_r)
+        print("dois verdes1")
+        if color_l == Color.GREEN and color_r == Color.GREEN:
+            print("dois verdes2")
+            robot.drive(-25, -180)
+            wait(3200)
+    if small_green < reflected_light_intensity_right <= big_green:
+        color_r = color_sensor_right.color()
+        color_l = color_sensor_left.color()
+        robot.drive(0, 0)
+        wait(200)
+        if color_r == Color.GREEN and color_l != Color.GREEN:
+            print("1 verdes")
+            robot.drive(-40, 90)
+            wait(1200)
+            print("feito")
+    if small_green < reflected_light_intensity_left <= big_green:
+        color_l = color_sensor_left.color()
+        color_r = color_sensor_right.color()
+        robot.drive(0, 0)
+        wait(200)
+        if color_l == Color.GREEN and color_r != Color.GREEN:
+            print("um verdes")
+            robot.drive(-40, -90)
+            wait(1200)
+            robot.drive(-20, 0)
+            wait(200)
+            print("feito")
+
+    if (55< reflected_light_intensity_left <= 76) and (58 < reflected_light_intensity_right <= 76):
+        last_error = 0
+        robot.drive(-100, 0)
+        wait(100)
+
+    
+    if (14 < reflected_light_intensity_left <= 30) and (14 < reflected_light_intensity_right <= 30):
+        print("red")
+        color_l = color_sensor_left.color()
+        color_r = color_sensor_right.color()
+        robot.drive(0, 0)
+        wait(1000)
+        print(color_l)
+        print(color_l)
+        if color_l == Color.RED or color_r == Color.RED:
+            robot.drive(0, 0)
+            wait(1000000)
+    # if len(last_values_sensor) > 40:
+       # last_values_sensor.pop(0)
+        # if len(last_values_sensor) >= 20:
+            # Verifica se os últimos 20 valores em ambos os sensores são pretos
+            # if all(small_black <= values[0] <= big_black for values in last_values_sensor[-20:]) and all(small_black <= values[1] <= big_black for values in last_values_sensor[-20:]):
+                # Verifica se não há verde nos últimos 20 valores em ambos os sensores
+                # if all(all(val < small_green or val > big_green for val in values[-40:]) for values in last_values_sensor):
+                # Robô anda para frente por 2 segundos
+                # robot.drive_time(75, 0, 2000)
+
+    if (4 < reflected_light_intensity_left <= 13) and (4 < reflected_light_intensity_right <= 13) or (8 < reflected_light_intensity_left <= 13) and (8 < reflected_light_intensity_right <= 13):
+        print("ok")
+        robot.drive(0, 0)
+        wait(2000)
+        color_l = color_sensor_left.color()
+        color_r = color_sensor_right.color()
+        wait(1000)
+        print("preto1")
+        robot.drive(25, 0)
+        wait(500)
+        if color_l == Color.BLACK and color_r == Color.BLACK:
+            robot.drive(-25, 0)
+            wait(500)   
+            color_l = color_sensor_left.color()
+            color_r = color_sensor_right.color()
+            print("preto2")
+            print(color_l)
+            print(color_r)
+            if (color_l == Color.BLACK and color_r == Color.BLACK) or (color_l == Color.GREEN and color_r == Color.GREEN):
+                robot.drive(-75, 0)
+                wait(2000)
+                print("preto3")
+        else:
+            robot.drive(-75, 0)
+            wait(2000)
+            print("preto3")
+    if distance < 75:
+        print("entrou obe")
+        robot.drive(-25, -90)
+        wait(3400)
+        robot.drive(-100, 0)
+        wait(2500)
+        robot.drive(-25, 90)
+        wait(3400)
+        robot.drive(-100, 0)
+        wait(6500)
+        robot.drive(-25, 90)
+        wait(3400)
+        robot.drive(-100, 0)
+        wait(2300)
+        robot.drive(-25, -90)
+        wait(3400)
+
+        print("acabou")
+
+    
+            
+
